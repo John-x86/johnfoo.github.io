@@ -1,0 +1,2517 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>微信扫码签到系统</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <style>
+        /* 全局样式 */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', 'Microsoft YaHei', 'PingFang SC', sans-serif;
+        }
+        
+        :root {
+            --primary-color: #3498db;
+            --secondary-color: #2ecc71;
+            --danger-color: #e74c3c;
+            --warning-color: #f39c12;
+            --dark-color: #2c3e50;
+            --light-color: #ecf0f1;
+            --gray-color: #95a5a6;
+            --border-radius: 12px;
+            --box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            --transition: all 0.3s ease;
+        }
+        
+        body {
+            background-color: #f8f9fa;
+            color: #333;
+            min-height: 100vh;
+            line-height: 1.6;
+        }
+        
+        .app-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        /* 头部样式 */
+        .app-header {
+            background: linear-gradient(135deg, var(--primary-color), #2980b9);
+            color: white;
+            border-radius: var(--border-radius);
+            padding: 25px 30px;
+            margin-bottom: 30px;
+            box-shadow: var(--box-shadow);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .app-header::before {
+            content: "";
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: rgba(255, 255, 255, 0.1);
+            transform: rotate(45deg);
+            z-index: 0;
+        }
+        
+        .header-content {
+            position: relative;
+            z-index: 1;
+        }
+        
+        .app-title {
+            font-size: 2rem;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .app-title i {
+            margin-right: 15px;
+            font-size: 1.8rem;
+        }
+        
+        .app-subtitle {
+            font-size: 1rem;
+            opacity: 0.9;
+        }
+        
+        /* 标签页导航 */
+        .tab-nav {
+            display: flex;
+            background-color: white;
+            border-radius: var(--border-radius);
+            overflow: hidden;
+            margin-bottom: 30px;
+            box-shadow: var(--box-shadow);
+        }
+        
+        .tab-btn {
+            flex: 1;
+            padding: 18px 20px;
+            background: none;
+            border: none;
+            font-size: 1.05rem;
+            font-weight: 600;
+            color: var(--gray-color);
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .tab-btn i {
+            margin-right: 10px;
+            font-size: 1.2rem;
+        }
+        
+        .tab-btn.active {
+            background-color: var(--primary-color);
+            color: white;
+        }
+        
+        .tab-btn:hover:not(.active) {
+            background-color: #f8f9fa;
+        }
+        
+        /* 标签页内容 */
+        .tab-content {
+            display: none;
+            animation: fadeIn 0.5s ease-out;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        /* 卡片样式 */
+        .card {
+            background-color: white;
+            border-radius: var(--border-radius);
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: var(--box-shadow);
+        }
+        
+        .card-title {
+            font-size: 1.4rem;
+            color: var(--dark-color);
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .card-title i {
+            margin-right: 10px;
+            color: var(--primary-color);
+        }
+        
+        /* 表单样式 */
+        .form-group {
+            margin-bottom: 25px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #4a5568;
+            font-size: 0.95rem;
+        }
+        
+        .required::after {
+            content: " *";
+            color: var(--danger-color);
+        }
+        
+        input, select, textarea {
+            width: 100%;
+            padding: 15px 20px;
+            border: 2px solid #e1e5eb;
+            border-radius: 10px;
+            font-size: 1rem;
+            transition: var(--transition);
+            background-color: white;
+        }
+        
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
+        }
+        
+        .signature-input {
+            height: 120px;
+            resize: vertical;
+            font-family: '楷体', 'STKaiti', cursive;
+            font-size: 1.4rem;
+        }
+        
+        .signature-preview {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 70px;
+            border: 2px dashed #ddd;
+            border-radius: 10px;
+            margin-top: 10px;
+            padding: 10px;
+            font-family: '楷体', 'STKaiti', cursive;
+            font-size: 1.5rem;
+            color: #555;
+            background-color: #f8f9fa;
+        }
+        
+        /* 按钮样式 */
+        .btn {
+            display: inline-block;
+            padding: 16px 30px;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 1.05rem;
+            font-weight: 600;
+            transition: var(--transition);
+            text-align: center;
+            text-decoration: none;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+        }
+        
+        .btn:active {
+            transform: translateY(0);
+        }
+        
+        .btn-success {
+            background-color: var(--secondary-color);
+        }
+        
+        .btn-danger {
+            background-color: var(--danger-color);
+        }
+        
+        .btn-warning {
+            background-color: var(--warning-color);
+        }
+        
+        .btn-block {
+            display: block;
+            width: 100%;
+            padding: 18px;
+            font-size: 1.1rem;
+        }
+        
+        .btn-group {
+            display: flex;
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        .btn-group .btn {
+            flex: 1;
+        }
+        
+        /* 会议信息样式 */
+        .meeting-info {
+            background-color: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 25px;
+            border-left: 4px solid var(--primary-color);
+        }
+        
+        .meeting-title {
+            font-size: 1.5rem;
+            color: var(--dark-color);
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+        
+        .meeting-details {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-top: 10px;
+        }
+        
+        .meeting-detail {
+            display: flex;
+            align-items: center;
+            color: var(--gray-color);
+            font-size: 0.95rem;
+        }
+        
+        .meeting-detail i {
+            margin-right: 8px;
+            color: var(--primary-color);
+            width: 20px;
+        }
+        
+        /* 统计卡片样式 */
+        .stats-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+        
+        .stat-card {
+            background-color: white;
+            border-radius: var(--border-radius);
+            padding: 25px;
+            box-shadow: var(--box-shadow);
+            text-align: center;
+        }
+        
+        .stat-icon {
+            font-size: 2.5rem;
+            color: var(--primary-color);
+            margin-bottom: 15px;
+        }
+        
+        .stat-value {
+            font-size: 2.8rem;
+            font-weight: 700;
+            color: var(--dark-color);
+            line-height: 1;
+            margin-bottom: 10px;
+        }
+        
+        .stat-label {
+            font-size: 1rem;
+            color: var(--gray-color);
+            font-weight: 600;
+        }
+        
+        /* 表格样式 */
+        .table-container {
+            overflow-x: auto;
+            margin-top: 15px;
+            border-radius: 10px;
+            border: 1px solid #e1e5eb;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.95rem;
+        }
+        
+        th {
+            background-color: var(--primary-color);
+            color: white;
+            text-align: left;
+            padding: 18px 20px;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+        
+        td {
+            padding: 18px 20px;
+            border-bottom: 1px solid #e1e5eb;
+        }
+        
+        tr:hover {
+            background-color: #f8f9fa;
+        }
+        
+        .signature-cell {
+            font-family: '楷体', 'STKaiti', cursive;
+            font-size: 1.2rem;
+        }
+        
+        .status-badge {
+            display: inline-block;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+        
+        .status-signed {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        
+        .status-unsigned {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        
+        .action-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 1rem;
+            margin: 0 5px;
+            padding: 8px;
+            border-radius: 5px;
+            transition: var(--transition);
+        }
+        
+        .edit-btn {
+            color: var(--primary-color);
+        }
+        
+        .edit-btn:hover {
+            background-color: #e8f4fc;
+        }
+        
+        .delete-btn {
+            color: var(--danger-color);
+        }
+        
+        .delete-btn:hover {
+            background-color: #fde8e8;
+        }
+        
+        /* 二维码样式 */
+        .qrcode-section {
+            text-align: center;
+            padding: 25px;
+            background-color: #f8f9fa;
+            border-radius: 10px;
+            margin-bottom: 25px;
+        }
+        
+        #qrcode {
+            display: inline-block;
+            padding: 20px;
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+        
+        .qrcode-info {
+            font-size: 0.95rem;
+            color: var(--gray-color);
+            margin-top: 10px;
+            line-height: 1.5;
+        }
+        
+        .qrcode-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+            justify-content: center;
+        }
+        
+        /* 设置页面样式 */
+        .settings-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+        
+        .list-editor {
+            max-height: 400px;
+            overflow-y: auto;
+            margin-bottom: 20px;
+        }
+        
+        .list-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            border-bottom: 1px solid #eee;
+            background-color: #f8f9fa;
+            margin-bottom: 10px;
+            border-radius: 8px;
+        }
+        
+        .list-item:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+        }
+        
+        .list-item-content {
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+        }
+        
+        .list-item-name {
+            font-weight: 600;
+            color: var(--dark-color);
+        }
+        
+        .list-item-detail {
+            font-size: 0.85rem;
+            color: var(--gray-color);
+            margin-top: 3px;
+        }
+        
+        .list-item-actions {
+            display: flex;
+            gap: 5px;
+        }
+        
+        /* 消息提示 */
+        .message {
+            padding: 18px 25px;
+            border-radius: 10px;
+            margin-bottom: 25px;
+            font-weight: 600;
+            display: none;
+            animation: fadeIn 0.3s ease-out;
+        }
+        
+        .message.success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+            display: block;
+        }
+        
+        .message.error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+            display: block;
+        }
+        
+        .message.info {
+            background-color: #e8f4fc;
+            color: #0c5460;
+            border: 1px solid #b8daff;
+            display: block;
+        }
+        
+        /* 加载动画 */
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 40px;
+        }
+        
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid var(--primary-color);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* 成功页面样式 */
+        .success-page {
+            text-align: center;
+            padding: 40px 20px;
+            background-color: white;
+            border-radius: var(--border-radius);
+            box-shadow: var(--box-shadow);
+            margin-bottom: 30px;
+        }
+        
+        .success-icon {
+            font-size: 5rem;
+            color: var(--secondary-color);
+            margin-bottom: 20px;
+            animation: bounce 1s infinite alternate;
+        }
+        
+        @keyframes bounce {
+            from { transform: translateY(0); }
+            to { transform: translateY(-10px); }
+        }
+        
+        .success-title {
+            font-size: 2rem;
+            color: var(--dark-color);
+            margin-bottom: 15px;
+        }
+        
+        .success-details {
+            background-color: #f8f9fa;
+            border-radius: 10px;
+            padding: 25px;
+            margin: 25px auto;
+            max-width: 500px;
+            text-align: left;
+        }
+        
+        .success-detail {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 12px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid #eaeaea;
+        }
+        
+        .success-detail:last-child {
+            margin-bottom: 0;
+            padding-bottom: 0;
+            border-bottom: none;
+        }
+        
+        .detail-label {
+            font-weight: 600;
+            color: var(--gray-color);
+        }
+        
+        .detail-value {
+            color: var(--dark-color);
+            font-weight: 600;
+        }
+        
+        .signature-success {
+            font-family: '楷体', 'STKaiti', cursive;
+            font-size: 1.6rem;
+            color: var(--dark-color);
+            margin-top: 15px;
+            text-align: center;
+            padding: 15px;
+            border-top: 1px solid #eaeaea;
+        }
+        
+        /* 微信提示 */
+        .wechat-tip {
+            background-color: #f0f7ff;
+            border-radius: 10px;
+            padding: 15px 20px;
+            margin-bottom: 20px;
+            border-left: 4px solid #07c160;
+            display: flex;
+            align-items: center;
+        }
+        
+        .wechat-tip i {
+            color: #07c160;
+            font-size: 1.5rem;
+            margin-right: 15px;
+        }
+        
+        /* 响应式调整 */
+        @media (max-width: 768px) {
+            .app-container {
+                padding: 15px;
+            }
+            
+            .app-header {
+                padding: 20px;
+            }
+            
+            .app-title {
+                font-size: 1.6rem;
+            }
+            
+            .tab-btn {
+                padding: 15px;
+                font-size: 0.95rem;
+            }
+            
+            .card {
+                padding: 20px;
+            }
+            
+            .stats-container {
+                grid-template-columns: 1fr;
+            }
+            
+            .btn-group {
+                flex-direction: column;
+            }
+            
+            .meeting-details {
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            .qrcode-actions {
+                flex-direction: column;
+            }
+            
+            .settings-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            th, td {
+                padding: 15px;
+            }
+        }
+        
+        /* 空状态提示 */
+        .empty-state {
+            text-align: center;
+            padding: 50px 20px;
+            color: var(--gray-color);
+        }
+        
+        .empty-state i {
+            font-size: 3rem;
+            margin-bottom: 15px;
+            color: #bdc3c7;
+        }
+        
+        /* 底部样式 */
+        .app-footer {
+            text-align: center;
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid #e1e5eb;
+            color: var(--gray-color);
+            font-size: 0.9rem;
+        }
+        
+        /* 表单行样式 */
+        .form-row {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+        
+        .form-row .form-group {
+            flex: 1;
+            margin-bottom: 0;
+        }
+        
+        @media (max-width: 768px) {
+            .form-row {
+                flex-direction: column;
+                gap: 25px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="app-container">
+        <!-- 头部 -->
+        <header class="app-header">
+            <div class="header-content">
+                <h1 class="app-title"><i class="fas fa-qrcode"></i> 微信扫码签到系统</h1>
+                <p class="app-subtitle">专为微信优化 | 扫码即签 | 实时统计 | 管理便捷</p>
+            </div>
+        </header>
+
+        <!-- 消息提示 -->
+        <div class="message" id="message"></div>
+
+        <!-- 部署提示 -->
+        <div class="wechat-tip" id="deployTip" style="background-color: #fff3cd; border-left-color: #ffc107;">
+            <i class="fas fa-info-circle" style="color: #ffc107;"></i>
+            <div>
+                <strong>使用提示：</strong>
+                <span id="deployTipText">本系统为纯前端实现，数据保存在浏览器本地。如需多人使用，请将本文件上传至服务器，或使用手机扫码工具直接扫描下方的测试二维码。</span>
+            </div>
+        </div>
+
+        <!-- 标签页导航 -->
+        <div class="tab-nav">
+            <button class="tab-btn active" data-tab="signin">
+                <i class="fas fa-sign-in-alt"></i> 扫码签到
+            </button>
+            <button class="tab-btn" data-tab="admin">
+                <i class="fas fa-chart-bar"></i> 签到统计
+            </button>
+            <button class="tab-btn" data-tab="settings">
+                <i class="fas fa-cog"></i> 系统设置
+            </button>
+        </div>
+
+        <!-- 扫码签到页面 -->
+        <div class="tab-content active" id="signinTab">
+            <!-- 会议信息 -->
+            <div class="meeting-info">
+                <div class="meeting-title" id="meetingTitle">技术交流会</div>
+                <div class="meeting-details">
+                    <div class="meeting-detail">
+                        <i class="fas fa-calendar-alt"></i>
+                        <span id="meetingDate">2023年10月15日 14:00-17:00</span>
+                    </div>
+                    <div class="meeting-detail">
+                        <i class="fas fa-map-marker-alt"></i>
+                        <span id="meetingLocation">会议室A - 3楼</span>
+                    </div>
+                    <div class="meeting-detail">
+                        <i class="fas fa-user-tie"></i>
+                        <span id="meetingOrganizer">技术部主办</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 签到表单 -->
+            <div class="card" id="signinFormCard">
+                <h2 class="card-title"><i class="fas fa-user-check"></i> 填写签到信息</h2>
+
+                <form id="signinForm">
+                    <div class="form-group">
+                        <label for="name" class="required">
+                            <i class="fas fa-user"></i> 姓名
+                        </label>
+                        <select id="name" name="name" required>
+                            <option value="">请选择您的姓名</option>
+                            <!-- 人员列表将通过JavaScript动态生成 -->
+                        </select>
+                        <p style="font-size: 0.85rem; color: #7f8c8d; margin-top: 5px;">
+                            <i class="fas fa-info-circle"></i> 请从列表中选择您的姓名，如果未找到请联系管理员添加
+                        </p>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="department">
+                            <i class="fas fa-building"></i> 部门/单位
+                        </label>
+                        <input type="text" id="department" name="department" readonly>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="signature" class="required">
+                            <i class="fas fa-signature"></i> 签名
+                        </label>
+                        <textarea id="signature" name="signature" class="signature-input" required placeholder="请输入您的签名（建议使用手写风格）"></textarea>
+                        <div class="signature-preview" id="signaturePreview">签名预览区域</div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="phone">
+                                <i class="fas fa-phone"></i> 联系电话
+                            </label>
+                            <input type="tel" id="phone" name="phone" placeholder="请输入您的联系电话">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="position">
+                                <i class="fas fa-briefcase"></i> 职位/职务
+                            </label>
+                            <input type="text" id="position" name="position" placeholder="请输入您的职位">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="notes">
+                            <i class="fas fa-sticky-note"></i> 备注
+                        </label>
+                        <input type="text" id="notes" name="notes" placeholder="其他需要说明的信息">
+                    </div>
+
+                    <button type="submit" class="btn btn-success btn-block">
+                        <i class="fas fa-check-circle"></i> 提交签到
+                    </button>
+                </form>
+            </div>
+
+            <!-- 签到成功页面（初始隐藏） -->
+            <div class="success-page" id="successPage" style="display: none;">
+                <div class="success-icon">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+                <h2 class="success-title">签到成功！</h2>
+                <p style="color: #7f8c8d; margin-bottom: 20px; font-size: 1.1rem;">您已成功完成会议签到</p>
+
+                <div class="success-details">
+                    <div class="success-detail">
+                        <span class="detail-label">签到时间：</span>
+                        <span class="detail-value" id="successTime"></span>
+                    </div>
+                    <div class="success-detail">
+                        <span class="detail-label">姓 名：</span>
+                        <span class="detail-value" id="successName"></span>
+                    </div>
+                    <div class="success-detail">
+                        <span class="detail-label">部 门：</span>
+                        <span class="detail-value" id="successDept"></span>
+                    </div>
+                    <div class="success-detail">
+                        <span class="detail-label">职 位：</span>
+                        <span class="detail-value" id="successPosition"></span>
+                    </div>
+                    <div class="success-detail">
+                        <span class="detail-label">联系电话：</span>
+                        <span class="detail-value" id="successPhone"></span>
+                    </div>
+                    <div class="signature-success" id="successSignature"></div>
+                </div>
+
+                <p style="color: #7f8c8d; margin: 20px 0; font-size: 0.95rem;">
+                    <i class="fas fa-info-circle"></i> 签到信息已保存，请妥善保管
+                </p>
+
+                <div class="btn-group">
+                    <button type="button" class="btn btn-success" id="newSigninBtn">
+                        <i class="fas fa-user-plus"></i> 帮他人签到
+                    </button>
+                    <button type="button" class="btn" id="viewAllBtn">
+                        <i class="fas fa-list"></i> 查看签到记录
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 管理员统计页面 -->
+        <div class="tab-content" id="adminTab">
+            <!-- 统计概览 -->
+            <div class="stats-container">
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <div class="stat-value" id="totalCount">0</div>
+                    <div class="stat-label">总人数</div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                    <div class="stat-value" id="signedCount">0</div>
+                    <div class="stat-label">已签到</div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-clock"></i>
+                    </div>
+                    <div class="stat-value" id="unsignedCount">0</div>
+                    <div class="stat-label">未签到</div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-percentage"></i>
+                    </div>
+                    <div class="stat-value" id="signRate">0%</div>
+                    <div class="stat-label">签到率</div>
+                </div>
+            </div>
+
+            <!-- 部门统计 -->
+            <div class="card">
+                <h2 class="card-title"><i class="fas fa-building"></i> 部门签到情况</h2>
+                <div id="departmentStats">
+                    <!-- 部门统计将通过JavaScript动态生成 -->
+                    <div class="empty-state">
+                        <i class="fas fa-building"></i>
+                        <h3>暂无部门数据</h3>
+                        <p>请在系统设置中添加部门和人员</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 签到二维码 -->
+            <div class="card">
+                <h2 class="card-title"><i class="fas fa-qrcode"></i> 会议签到二维码</h2>
+                <div class="qrcode-section">
+                    <!-- 测试用二维码 -->
+                    <div id="testQRCode" style="margin-bottom: 20px;">
+                        <p style="font-size: 0.9rem; color: #666; margin-bottom: 10px;">测试二维码（可直接微信扫描）：</p>
+                        <div id="testQR"></div>
+                    </div>
+
+                    <!-- 实际签到二维码 -->
+                    <div id="qrcode"></div>
+                    <p class="qrcode-info">
+                        <i class="fas fa-lightbulb"></i>
+                        将此二维码打印或展示给参会人员，使用微信扫描即可签到<br>
+                        <small>如需多人使用，请将本系统部署到服务器，或使用下方测试二维码</small>
+                    </p>
+                    <div class="qrcode-actions">
+                        <button class="btn" id="downloadQRBtn">
+                            <i class="fas fa-download"></i> 下载二维码
+                        </button>
+                        <button class="btn" id="printQRBtn">
+                            <i class="fas fa-print"></i> 打印二维码
+                        </button>
+                        <button class="btn btn-success" id="copyLinkBtn">
+                            <i class="fas fa-link"></i> 复制链接
+                        </button>
+                    </div>
+
+                    <!-- 本地使用提示 -->
+                    <div class="wechat-tip" style="margin-top: 20px; background-color: #f8f9fa; border-left-color: #6c757d;">
+                        <i class="fas fa-exclamation-triangle" style="color: #6c757d;"></i>
+                        <div>
+                            <strong>二维码使用说明：</strong>
+                            <span>由于微信安全限制，本地文件(file://协议)的二维码无法直接扫描。解决方案：1. 将本文件上传至服务器；2. 使用微信开发者工具；3. 使用上方测试二维码</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 签到人员列表 -->
+            <div class="card">
+                <h2 class="card-title"><i class="fas fa-list"></i> 签到人员列表</h2>
+
+                <div class="btn-group">
+                    <button class="btn" id="showAllBtn">
+                        <i class="fas fa-users"></i> 全部人员
+                    </button>
+                    <button class="btn btn-success" id="showSignedBtn">
+                        <i class="fas fa-check-circle"></i> 已签到
+                    </button>
+                    <button class="btn btn-warning" id="showUnsignedBtn">
+                        <i class="fas fa-clock"></i> 未签到
+                    </button>
+                </div>
+
+                <div class="table-container">
+                    <table id="signinTable">
+                        <thead>
+                            <tr>
+                                <th>序号</th>
+                                <th>姓名</th>
+                                <th>部门</th>
+                                <th>职位</th>
+                                <th>签到状态</th>
+                                <th>签到时间</th>
+                                <th>签名</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="signinTableBody">
+                            <!-- 表格数据将通过JavaScript动态生成 -->
+                            <tr>
+                                <td colspan="8" class="empty-state">
+                                    <i class="fas fa-users"></i>
+                                    <h3>暂无人员数据</h3>
+                                    <p>请在系统设置中添加人员</p>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="btn-group">
+                    <button class="btn" id="exportExcelBtn">
+                        <i class="fas fa-file-excel"></i> 导出Excel
+                    </button>
+                    <button class="btn" id="exportPDFBtn">
+                        <i class="fas fa-file-pdf"></i> 导出PDF
+                    </button>
+                    <button class="btn btn-danger" id="clearSigninBtn">
+                        <i class="fas fa-trash-alt"></i> 清空记录
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 系统设置页面 -->
+        <div class="tab-content" id="settingsTab">
+            <div class="settings-grid">
+                <!-- 会议设置 -->
+                <div class="card">
+                    <h2 class="card-title"><i class="fas fa-cog"></i> 会议设置</h2>
+                    <form id="meetingForm">
+                        <div class="form-group">
+                            <label for="meetingTitleInput">
+                                <i class="fas fa-heading"></i> 会议名称
+                            </label>
+                            <input type="text" id="meetingTitleInput" required placeholder="请输入会议名称">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="meetingDateInput">
+                                <i class="fas fa-calendar-alt"></i> 会议时间
+                            </label>
+                            <input type="text" id="meetingDateInput" required placeholder="例如：2023年10月15日 14:00-17:00">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="meetingLocationInput">
+                                <i class="fas fa-map-marker-alt"></i> 会议地点
+                            </label>
+                            <input type="text" id="meetingLocationInput" required placeholder="请输入会议地点">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="meetingOrganizerInput">
+                                <i class="fas fa-user-tie"></i> 主办单位
+                            </label>
+                            <input type="text" id="meetingOrganizerInput" required placeholder="请输入主办单位">
+                        </div>
+
+                        <button type="submit" class="btn btn-success btn-block">
+                            <i class="fas fa-save"></i> 保存会议设置
+                        </button>
+                    </form>
+                </div>
+
+                <!-- 部门管理 -->
+                <div class="card">
+                    <h2 class="card-title"><i class="fas fa-building"></i> 部门管理</h2>
+                    <div class="form-group">
+                        <label for="newDepartment">
+                            <i class="fas fa-plus-circle"></i> 添加新部门
+                        </label>
+                        <div style="display: flex; gap: 10px;">
+                            <input type="text" id="newDepartment" placeholder="请输入部门名称">
+                            <button type="button" class="btn" id="addDepartmentBtn">
+                                <i class="fas fa-plus"></i> 添加
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="list-editor" id="departmentList">
+                        <!-- 部门列表将通过JavaScript动态生成 -->
+                        <div class="empty-state">
+                            <i class="fas fa-building"></i>
+                            <h3>暂无部门</h3>
+                            <p>请添加部门</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 人员管理 -->
+                <div class="card">
+                    <h2 class="card-title"><i class="fas fa-users"></i> 人员管理</h2>
+                    <div class="form-group">
+                        <label for="newPersonName">
+                            <i class="fas fa-user-plus"></i> 添加新人员
+                        </label>
+                        <div style="display: flex; flex-direction: column; gap: 10px;">
+                            <div style="display: flex; gap: 10px;">
+                                <input type="text" id="newPersonName" placeholder="姓名" style="flex: 1;">
+                                <select id="newPersonDepartment" style="flex: 1;">
+                                    <option value="">选择部门</option>
+                                    <!-- 部门选项将通过JavaScript动态生成 -->
+                                </select>
+                            </div>
+                            <div style="display: flex; gap: 10px;">
+                                <input type="tel" id="newPersonPhone" placeholder="联系电话" style="flex: 1;">
+                                <input type="text" id="newPersonPosition" placeholder="职位" style="flex: 1;">
+                            </div>
+                            <button type="button" class="btn" id="addPersonBtn">
+                                <i class="fas fa-plus"></i> 添加人员
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="list-editor" id="personList">
+                        <!-- 人员列表将通过JavaScript动态生成 -->
+                        <div class="empty-state">
+                            <i class="fas fa-users"></i>
+                            <h3>暂无人员</h3>
+                            <p>请添加人员</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 数据管理 -->
+                <div class="card">
+                    <h2 class="card-title"><i class="fas fa-database"></i> 数据管理</h2>
+                    <div style="margin-bottom: 25px;">
+                        <p style="color: #7f8c8d; margin-bottom: 15px;">
+                            <i class="fas fa-info-circle"></i> 您可以导出系统数据备份，或在需要时导入恢复
+                        </p>
+
+                        <div class="btn-group">
+                            <button class="btn" id="exportDataBtn">
+                                <i class="fas fa-file-export"></i> 导出备份
+                            </button>
+                            <button class="btn" id="importDataBtn">
+                                <i class="fas fa-file-import"></i> 导入备份
+                            </button>
+                        </div>
+                    </div>
+
+                    <div>
+                        <p style="color: #7f8c8d; margin-bottom: 15px;">
+                            <i class="fas fa-exclamation-triangle"></i> 警告：以下操作不可撤销，请谨慎操作
+                        </p>
+
+                        <div class="btn-group">
+                            <button class="btn btn-danger" id="resetAllBtn">
+                                <i class="fas fa-eraser"></i> 重置所有数据
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 加载中 -->
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p>正在处理中，请稍候...</p>
+        </div>
+
+        <!-- 底部 -->
+        <footer class="app-footer">
+            <p>微信扫码签到系统 &copy; 2023 | 专为微信优化，扫码即签，管理便捷</p>
+            <p style="font-size: 0.85rem; margin-top: 5px;">数据存储在本地浏览器中，如需长期保存请定期导出备份</p>
+        </footer>
+    </div>
+
+    <!-- 第三方库 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+
+    <script>
+        // 系统数据存储
+        let meetingData = JSON.parse(localStorage.getItem('meetingData')) || {
+            title: "技术交流会",
+            date: "2023年10月15日 14:00-17:00",
+            location: "会议室A - 3楼",
+            organizer: "技术部主办"
+        };
+        
+        let departments = JSON.parse(localStorage.getItem('departments')) || [
+            "技术部", "市场部", "销售部", "人力资源部", "财务部", "行政部"
+        ];
+        
+        let persons = JSON.parse(localStorage.getItem('persons')) || [
+            { id: 1, name: "张三", department: "技术部", phone: "13800138001", position: "高级工程师" },
+            { id: 2, name: "李四", department: "市场部", phone: "13800138002", position: "市场经理" },
+            { id: 3, name: "王五", department: "销售部", phone: "13800138003", position: "销售主管" },
+            { id: 4, name: "赵六", department: "人力资源部", phone: "13800138004", position: "HR经理" },
+            { id: 5, name: "钱七", department: "财务部", phone: "13800138005", position: "财务总监" },
+            { id: 6, name: "孙八", department: "行政部", phone: "13800138006", position: "行政主管" }
+        ];
+        
+        let signinRecords = JSON.parse(localStorage.getItem('signinRecords')) || [];
+        
+        // 检测是否在微信中
+        const isWechat = /MicroMessenger/i.test(navigator.userAgent);
+        
+        // DOM元素
+        const messageDiv = document.getElementById('message');
+        const loadingDiv = document.getElementById('loading');
+        const deployTip = document.getElementById('deployTip');
+        const deployTipText = document.getElementById('deployTipText');
+        const tabBtns = document.querySelectorAll('.tab-btn');
+        const tabContents = document.querySelectorAll('.tab-content');
+        
+        // 签到页面元素
+        const signinTab = document.getElementById('signinTab');
+        const meetingTitle = document.getElementById('meetingTitle');
+        const meetingDate = document.getElementById('meetingDate');
+        const meetingLocation = document.getElementById('meetingLocation');
+        const meetingOrganizer = document.getElementById('meetingOrganizer');
+        const signinForm = document.getElementById('signinForm');
+        const signinFormCard = document.getElementById('signinFormCard');
+        const nameSelect = document.getElementById('name');
+        const departmentInput = document.getElementById('department');
+        const signatureInput = document.getElementById('signature');
+        const signaturePreview = document.getElementById('signaturePreview');
+        const successPage = document.getElementById('successPage');
+        const successTime = document.getElementById('successTime');
+        const successName = document.getElementById('successName');
+        const successDept = document.getElementById('successDept');
+        const successPosition = document.getElementById('successPosition');
+        const successPhone = document.getElementById('successPhone');
+        const successSignature = document.getElementById('successSignature');
+        const newSigninBtn = document.getElementById('newSigninBtn');
+        const viewAllBtn = document.getElementById('viewAllBtn');
+        
+        // 管理员页面元素
+        const adminTab = document.getElementById('adminTab');
+        const totalCount = document.getElementById('totalCount');
+        const signedCount = document.getElementById('signedCount');
+        const unsignedCount = document.getElementById('unsignedCount');
+        const signRate = document.getElementById('signRate');
+        const departmentStats = document.getElementById('departmentStats');
+        const qrcodeDiv = document.getElementById('qrcode');
+        const testQRDiv = document.getElementById('testQR');
+        const downloadQRBtn = document.getElementById('downloadQRBtn');
+        const printQRBtn = document.getElementById('printQRBtn');
+        const copyLinkBtn = document.getElementById('copyLinkBtn');
+        const showAllBtn = document.getElementById('showAllBtn');
+        const showSignedBtn = document.getElementById('showSignedBtn');
+        const showUnsignedBtn = document.getElementById('showUnsignedBtn');
+        const signinTableBody = document.getElementById('signinTableBody');
+        const exportExcelBtn = document.getElementById('exportExcelBtn');
+        const exportPDFBtn = document.getElementById('exportPDFBtn');
+        const clearSigninBtn = document.getElementById('clearSigninBtn');
+        
+        // 设置页面元素
+        const settingsTab = document.getElementById('settingsTab');
+        const meetingForm = document.getElementById('meetingForm');
+        const meetingTitleInput = document.getElementById('meetingTitleInput');
+        const meetingDateInput = document.getElementById('meetingDateInput');
+        const meetingLocationInput = document.getElementById('meetingLocationInput');
+        const meetingOrganizerInput = document.getElementById('meetingOrganizerInput');
+        const newDepartmentInput = document.getElementById('newDepartment');
+        const addDepartmentBtn = document.getElementById('addDepartmentBtn');
+        const departmentList = document.getElementById('departmentList');
+        const newPersonName = document.getElementById('newPersonName');
+        const newPersonDepartment = document.getElementById('newPersonDepartment');
+        const newPersonPhone = document.getElementById('newPersonPhone');
+        const newPersonPosition = document.getElementById('newPersonPosition');
+        const addPersonBtn = document.getElementById('addPersonBtn');
+        const personList = document.getElementById('personList');
+        const exportDataBtn = document.getElementById('exportDataBtn');
+        const importDataBtn = document.getElementById('importDataBtn');
+        const resetAllBtn = document.getElementById('resetAllBtn');
+        
+        // 二维码生成器
+        let qrCode = null;
+        let testQRCode = null;
+        
+        // 初始化应用
+        document.addEventListener('DOMContentLoaded', function() {
+            // 检查是否是本地文件
+            const isLocalFile = window.location.protocol === 'file:';
+            
+            if (isLocalFile) {
+                deployTipText.innerHTML = `
+                    本系统为纯前端实现，数据保存在浏览器本地。微信无法直接扫描本地文件二维码。<br>
+                    <strong>解决方案：</strong>
+                    <ol style="margin: 5px 0; padding-left: 20px;">
+                        <li>将本HTML文件上传至服务器（如GitHub Pages、Vercel等免费托管平台）</li>
+                        <li>使用微信开发者工具调试</li>
+                        <li>使用下方测试二维码（生成一个在线签到页面的链接）</li>
+                    </ol>
+                `;
+            }
+            
+            // 加载数据
+            loadMeetingData();
+            loadDepartments();
+            loadPersons();
+            updateSigninPage();
+            updateAdminPage();
+            
+            // 生成会议二维码
+            generateMeetingQRCode();
+            
+            // 生成测试二维码（使用在线页面）
+            generateTestQRCode();
+            
+            // 标签页切换
+            tabBtns.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const tabId = this.getAttribute('data-tab');
+                    showTab(tabId);
+                });
+            });
+            
+            // 签名预览
+            signatureInput.addEventListener('input', function() {
+                signaturePreview.textContent = this.value || '签名预览区域';
+            });
+            
+            // 签到表单提交
+            signinForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                const name = nameSelect.value;
+                const signature = signatureInput.value.trim();
+                
+                if (!name) {
+                    showMessage('请选择您的姓名', 'error');
+                    return;
+                }
+                
+                if (!signature) {
+                    showMessage('请填写签名', 'error');
+                    return;
+                }
+                
+                // 获取人员信息
+                const person = persons.find(p => p.name === name);
+                if (!person) {
+                    showMessage('找不到对应人员信息', 'error');
+                    return;
+                }
+                
+                // 检查是否已签到
+                const alreadySigned = signinRecords.find(record => record.personId === person.id);
+                if (alreadySigned) {
+                    showMessage('该人员已签到，请勿重复提交', 'error');
+                    return;
+                }
+                
+                // 创建签到记录
+                const newRecord = {
+                    id: Date.now(),
+                    personId: person.id,
+                    name: person.name,
+                    department: person.department,
+                    position: document.getElementById('position').value.trim() || person.position || '',
+                    signature: signature,
+                    phone: document.getElementById('phone').value.trim() || person.phone || '',
+                    notes: document.getElementById('notes').value.trim(),
+                    signinTime: new Date().toLocaleString('zh-CN'),
+                    timestamp: new Date().toISOString()
+                };
+                
+                // 添加到记录
+                signinRecords.push(newRecord);
+                saveData('signinRecords', signinRecords);
+                
+                // 显示成功页面
+                showSuccessPage(newRecord);
+                
+                // 更新管理员页面
+                updateAdminPage();
+                
+                // 振动反馈（如果支持）
+                if (navigator.vibrate) {
+                    navigator.vibrate([100, 50, 100]);
+                }
+            });
+            
+            // 姓名选择改变时自动填充部门
+            nameSelect.addEventListener('change', function() {
+                const selectedName = this.value;
+                if (selectedName) {
+                    const person = persons.find(p => p.name === selectedName);
+                    if (person) {
+                        departmentInput.value = person.department;
+                        document.getElementById('position').value = person.position || '';
+                        document.getElementById('phone').value = person.phone || '';
+                    }
+                } else {
+                    departmentInput.value = '';
+                    document.getElementById('position').value = '';
+                    document.getElementById('phone').value = '';
+                }
+            });
+            
+            // 帮他人签到
+            newSigninBtn.addEventListener('click', function() {
+                // 隐藏成功页面，显示表单
+                successPage.style.display = 'none';
+                signinFormCard.style.display = 'block';
+                
+                // 重置表单
+                signinForm.reset();
+                signaturePreview.textContent = '签名预览区域';
+                departmentInput.value = '';
+                document.getElementById('position').value = '';
+                document.getElementById('phone').value = '';
+                
+                // 更新人员列表（标记已签到人员）
+                updateNameSelect();
+            });
+            
+            // 查看签到记录
+            viewAllBtn.addEventListener('click', function() {
+                showTab('admin');
+            });
+            
+            // 下载二维码
+            downloadQRBtn.addEventListener('click', function() {
+                const canvas = document.querySelector('#qrcode canvas');
+                if (canvas) {
+                    const link = document.createElement('a');
+                    link.download = '微信签到二维码.png';
+                    link.href = canvas.toDataURL('image/png');
+                    link.click();
+                    showMessage('二维码已下载', 'success');
+                }
+            });
+            
+            // 打印二维码
+            printQRBtn.addEventListener('click', function() {
+                const canvas = document.querySelector('#qrcode canvas');
+                if (canvas) {
+                    const printWindow = window.open('', '_blank');
+                    printWindow.document.write(`
+                        <html  lang="zh-CN">
+                            <head>
+                                <title>微信签到二维码</title>
+                                <style>
+                                    body { font-family: Arial, sans-serif; text-align: center; padding: 30px; }
+                                    h1 { color: #2c3e50; margin-bottom: 20px; }
+                                    .meeting-info { text-align: left; margin: 20px auto; max-width: 400px; }
+                                    .info-item { margin-bottom: 10px; }
+                                    .qrcode-container { margin: 30px auto; }
+                                    .tip { color: #666; font-size: 0.9rem; margin-top: 20px; }
+                                </style>
+                            </head>
+                            <body>
+                                <h1>${meetingData.title}</h1>
+                                <div class="meeting-info">
+                                    <div class="info-item"><strong>会议时间：</strong>${meetingData.date}</div>
+                                    <div class="info-item"><strong>会议地点：</strong>${meetingData.location}</div>
+                                    <div class="info-item"><strong>主办单位：</strong>${meetingData.organizer}</div>
+                                </div>
+                                <div class="qrcode-container">
+                                    <img src="${canvas.toDataURL('image/png')}" alt="微信签到二维码" style="max-width: 300px;">
+                                </div>
+                                <p>请使用微信扫描此二维码完成会议签到</p>
+                                <p class="tip">如无法正常显示，请点击右上角"..."选择"在浏览器中打开"</p>
+                            </body>
+                        </html>
+                    `);
+                    printWindow.document.close();
+                    printWindow.print();
+                }
+            });
+            
+            // 复制签到链接
+            copyLinkBtn.addEventListener('click', function() {
+                // 生成带签到模式的链接
+                const signinURL = generateSigninURL();
+                
+                // 复制到剪贴板
+                navigator.clipboard.writeText(signinURL)
+                    .then(() => {
+                        showMessage('签到链接已复制到剪贴板', 'success');
+                    })
+                    .catch(err => {
+                        console.error('复制失败:', err);
+                        // 备用方法
+                        const textArea = document.createElement('textarea');
+                        textArea.value = signinURL;
+                        document.body.appendChild(textArea);
+                        textArea.select();
+                        document.execCommand('copy');
+                        document.body.removeChild(textArea);
+                        showMessage('签到链接已复制', 'success');
+                    });
+            });
+            
+            // 显示全部人员
+            showAllBtn.addEventListener('click', function() {
+                renderSigninTable('all');
+            });
+            
+            // 显示已签到人员
+            showSignedBtn.addEventListener('click', function() {
+                renderSigninTable('signed');
+            });
+            
+            // 显示未签到人员
+            showUnsignedBtn.addEventListener('click', function() {
+                renderSigninTable('unsigned');
+            });
+            
+            // 导出Excel
+            exportExcelBtn.addEventListener('click', exportToExcel);
+            
+            // 导出PDF
+            exportPDFBtn.addEventListener('click', exportToPDF);
+            
+            // 清空签到记录
+            clearSigninBtn.addEventListener('click', function() {
+                if (confirm('确定要清空所有签到记录吗？此操作不可撤销。')) {
+                    signinRecords = [];
+                    saveData('signinRecords', signinRecords);
+                    updateAdminPage();
+                    updateSigninPage();
+                    showMessage('所有签到记录已清空', 'success');
+                }
+            });
+            
+            // 保存会议设置
+            meetingForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                meetingData = {
+                    title: meetingTitleInput.value,
+                    date: meetingDateInput.value,
+                    location: meetingLocationInput.value,
+                    organizer: meetingOrganizerInput.value
+                };
+                
+                saveData('meetingData', meetingData);
+                updateMeetingDisplay();
+                generateMeetingQRCode();
+                
+                showMessage('会议设置已保存', 'success');
+            });
+            
+            // 添加部门
+            addDepartmentBtn.addEventListener('click', function() {
+                const newDept = newDepartmentInput.value.trim();
+                if (!newDept) {
+                    showMessage('请输入部门名称', 'error');
+                    return;
+                }
+                
+                if (departments.includes(newDept)) {
+                    showMessage('该部门已存在', 'error');
+                    return;
+                }
+                
+                departments.push(newDept);
+                saveData('departments', departments);
+                newDepartmentInput.value = '';
+                
+                updateDepartmentList();
+                updatePersonDepartmentOptions();
+                updateSigninPage();
+                
+                showMessage(`部门 "${newDept}" 已添加`, 'success');
+            });
+            
+            // 添加人员
+            addPersonBtn.addEventListener('click', function() {
+                const name = newPersonName.value.trim();
+                const department = newPersonDepartment.value;
+                const phone = newPersonPhone.value.trim();
+                const position = newPersonPosition.value.trim();
+                
+                if (!name) {
+                    showMessage('请输入人员姓名', 'error');
+                    return;
+                }
+                
+                if (!department) {
+                    showMessage('请选择部门', 'error');
+                    return;
+                }
+                
+                // 检查是否已存在
+                const existingPerson = persons.find(p => p.name === name);
+                if (existingPerson) {
+                    showMessage('该人员已存在', 'error');
+                    return;
+                }
+                
+                // 添加人员
+                const newPerson = {
+                    id: Date.now(),
+                    name: name,
+                    department: department,
+                    phone: phone,
+                    position: position
+                };
+                
+                persons.push(newPerson);
+                saveData('persons', persons);
+                
+                // 清空表单
+                newPersonName.value = '';
+                newPersonPhone.value = '';
+                newPersonPosition.value = '';
+                
+                updatePersonList();
+                updateSigninPage();
+                
+                showMessage(`人员 "${name}" 已添加`, 'success');
+            });
+            
+            // 导出数据备份
+            exportDataBtn.addEventListener('click', exportDataBackup);
+            
+            // 导入数据备份
+            importDataBtn.addEventListener('click', importDataBackup);
+            
+            // 重置所有数据
+            resetAllBtn.addEventListener('click', function() {
+                if (confirm('确定要重置所有数据吗？这将清除所有会议设置、部门、人员和签到记录。此操作不可撤销。')) {
+                    localStorage.clear();
+                    
+                    // 重置数据
+                    meetingData = {
+                        title: "技术交流会",
+                        date: "2023年10月15日 14:00-17:00",
+                        location: "会议室A - 3楼",
+                        organizer: "技术部主办"
+                    };
+                    
+                    departments = ["技术部", "市场部", "销售部", "人力资源部", "财务部", "行政部"];
+                    
+                    persons = [
+                        { id: 1, name: "张三", department: "技术部", phone: "13800138001", position: "高级工程师" },
+                        { id: 2, name: "李四", department: "市场部", phone: "13800138002", position: "市场经理" },
+                        { id: 3, name: "王五", department: "销售部", phone: "13800138003", position: "销售主管" },
+                        { id: 4, name: "赵六", department: "人力资源部", phone: "13800138004", position: "HR经理" },
+                        { id: 5, name: "钱七", department: "财务部", phone: "13800138005", position: "财务总监" },
+                        { id: 6, name: "孙八", department: "行政部", phone: "13800138006", position: "行政主管" }
+                    ];
+                    
+                    signinRecords = [];
+                    
+                    // 重新加载页面
+                    loadMeetingData();
+                    loadDepartments();
+                    loadPersons();
+                    updateSigninPage();
+                    updateAdminPage();
+                    generateMeetingQRCode();
+                    generateTestQRCode();
+                    
+                    showMessage('所有数据已重置', 'success');
+                }
+            });
+        });
+        
+        // 显示指定标签页
+        function showTab(tabId) {
+            // 更新标签按钮状态
+            tabBtns.forEach(btn => {
+                btn.classList.remove('active');
+                if (btn.getAttribute('data-tab') === tabId) {
+                    btn.classList.add('active');
+                }
+            });
+            
+            // 显示对应的内容
+            tabContents.forEach(content => {
+                content.classList.remove('active');
+                if (content.id === tabId + 'Tab') {
+                    content.classList.add('active');
+                }
+            });
+            
+            // 如果是管理员页面，更新数据
+            if (tabId === 'admin') {
+                updateAdminPage();
+            }
+        }
+        
+        // 生成签到URL
+        function generateSigninURL() {
+            // 如果是本地文件，生成一个在线测试页面
+            if (window.location.protocol === 'file:') {
+                // 创建一个数据分享链接（使用Base64编码数据）
+                const shareData = {
+                    meeting: meetingData,
+                    persons: persons,
+                    departments: departments
+                };
+                
+                const encodedData = btoa(JSON.stringify(shareData));
+                // 这是一个在线演示页面的URL，实际使用时需要替换为您的服务器地址
+                return `https://your-server.com/signin-demo.html?data=${encodedData}`;
+            } else {
+                // 如果是HTTP/HTTPS协议，使用当前页面的URL
+                return window.location.origin + window.location.pathname + '?mode=signin&t=' + Date.now();
+            }
+        }
+        
+        // 生成测试二维码（使用在线页面）
+        function generateTestQRCode() {
+            // 创建一个模拟的在线签到页面URL
+            // 在实际使用中，您需要将这个URL替换为您部署的服务器地址
+            const testURL = "https://your-server.com/signin-system.html?mode=signin&test=true";
+            
+            // 清除之前的二维码
+            if (testQRCode) {
+                testQRCode.clear();
+            }
+            
+            // 生成新的二维码
+            testQRCode = new QRCode(testQRDiv, {
+                text: testURL,
+                width: 180,
+                height: 180,
+                colorDark: "#2c3e50",
+                colorLight: "#ffffff",
+                correctLevel: QRCode.CorrectLevel.H
+            });
+        }
+        
+        // 生成会议二维码
+        function generateMeetingQRCode() {
+            // 生成带签到模式的链接
+            const signinURL = generateSigninURL();
+            
+            // 清除之前的二维码
+            if (qrCode) {
+                qrCode.clear();
+            }
+            
+            // 生成新的二维码
+            qrCode = new QRCode(qrcodeDiv, {
+                text: signinURL,
+                width: 200,
+                height: 200,
+                colorDark: "#2c3e50",
+                colorLight: "#ffffff",
+                correctLevel: QRCode.CorrectLevel.H
+            });
+        }
+        
+        // 加载会议数据
+        function loadMeetingData() {
+            meetingTitleInput.value = meetingData.title;
+            meetingDateInput.value = meetingData.date;
+            meetingLocationInput.value = meetingData.location;
+            meetingOrganizerInput.value = meetingData.organizer;
+            
+            updateMeetingDisplay();
+        }
+        
+        // 更新会议显示
+        function updateMeetingDisplay() {
+            meetingTitle.textContent = meetingData.title;
+            meetingDate.textContent = meetingData.date;
+            meetingLocation.textContent = meetingData.location;
+            meetingOrganizer.textContent = meetingData.organizer;
+        }
+        
+        // 加载部门数据
+        function loadDepartments() {
+            updateDepartmentList();
+            updatePersonDepartmentOptions();
+        }
+        
+        // 更新部门列表
+        function updateDepartmentList() {
+            departmentList.innerHTML = '';
+            
+            if (departments.length === 0) {
+                departmentList.innerHTML = '<div class="empty-state"><i class="fas fa-building"></i><h3>暂无部门</h3><p>请添加部门</p></div>';
+                return;
+            }
+            
+            departments.forEach((dept, index) => {
+                const deptItem = document.createElement('div');
+                deptItem.className = 'list-item';
+                
+                // 统计该部门人数
+                const personCount = persons.filter(p => p.department === dept).length;
+                
+                deptItem.innerHTML = `
+                    <div class="list-item-content">
+                        <div class="list-item-name">${dept}</div>
+                        <div class="list-item-detail">${personCount} 名人员</div>
+                    </div>
+                    <div class="list-item-actions">
+                        <button class="action-btn edit-btn edit-dept-btn" data-index="${index}">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="action-btn delete-btn delete-dept-btn" data-index="${index}">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                `;
+                
+                departmentList.appendChild(deptItem);
+            });
+            
+            // 添加删除部门事件
+            document.querySelectorAll('.delete-dept-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const index = parseInt(this.getAttribute('data-index'));
+                    const deptName = departments[index];
+                    
+                    // 检查是否有人员属于该部门
+                    const deptPersons = persons.filter(p => p.department === deptName);
+                    if (deptPersons.length > 0) {
+                        showMessage(`无法删除部门 "${deptName}"，因为该部门下有 ${deptPersons.length} 名人员。请先转移或删除这些人员。`, 'error');
+                        return;
+                    }
+                    
+                    if (confirm(`确定要删除部门 "${deptName}" 吗？`)) {
+                        departments.splice(index, 1);
+                        saveData('departments', departments);
+                        updateDepartmentList();
+                        updatePersonDepartmentOptions();
+                        updateSigninPage();
+                        
+                        showMessage(`部门 "${deptName}" 已删除`, 'success');
+                    }
+                });
+            });
+            
+            // 添加编辑部门事件
+            document.querySelectorAll('.edit-dept-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const index = parseInt(this.getAttribute('data-index'));
+                    const oldDeptName = departments[index];
+                    const newDeptName = prompt('请输入新的部门名称：', oldDeptName);
+                    
+                    if (newDeptName && newDeptName !== oldDeptName) {
+                        // 更新部门名称
+                        departments[index] = newDeptName;
+                        
+                        // 更新所有人员的部门信息
+                        persons.forEach(person => {
+                            if (person.department === oldDeptName) {
+                                person.department = newDeptName;
+                            }
+                        });
+                        
+                        // 更新签到记录中的部门信息
+                        signinRecords.forEach(record => {
+                            if (record.department === oldDeptName) {
+                                record.department = newDeptName;
+                            }
+                        });
+                        
+                        // 保存数据
+                        saveData('departments', departments);
+                        saveData('persons', persons);
+                        saveData('signinRecords', signinRecords);
+                        
+                        // 更新显示
+                        updateDepartmentList();
+                        updatePersonList();
+                        updatePersonDepartmentOptions();
+                        updateSigninPage();
+                        
+                        showMessage(`部门 "${oldDeptName}" 已修改为 "${newDeptName}"`, 'success');
+                    }
+                });
+            });
+        }
+        
+        // 更新人员部门选择选项
+        function updatePersonDepartmentOptions() {
+            // 更新人员表单中的部门选项
+            newPersonDepartment.innerHTML = '<option value="">选择部门</option>';
+            departments.forEach(dept => {
+                const option = document.createElement('option');
+                option.value = dept;
+                option.textContent = dept;
+                newPersonDepartment.appendChild(option);
+            });
+        }
+        
+        // 加载人员数据
+        function loadPersons() {
+            updatePersonList();
+            updateSigninPage();
+        }
+        
+        // 更新人员列表
+        function updatePersonList() {
+            personList.innerHTML = '';
+            
+            if (persons.length === 0) {
+                personList.innerHTML = '<div class="empty-state"><i class="fas fa-users"></i><h3>暂无人员</h3><p>请添加人员</p></div>';
+                return;
+            }
+            
+            persons.forEach((person, index) => {
+                const personItem = document.createElement('div');
+                personItem.className = 'list-item';
+                
+                // 检查是否已签到
+                const hasSigned = signinRecords.some(record => record.personId === person.id);
+                const signStatus = hasSigned ? '<span class="status-badge status-signed" style="font-size: 0.8rem; margin-left: 5px;">已签到</span>' : '';
+                
+                personItem.innerHTML = `
+                    <div class="list-item-content">
+                        <div class="list-item-name">
+                            ${person.name} ${signStatus}
+                        </div>
+                        <div class="list-item-detail">
+                            ${person.department} | ${person.position || '未填写职位'} | ${person.phone || '未填写电话'}
+                        </div>
+                    </div>
+                    <div class="list-item-actions">
+                        <button class="action-btn edit-btn edit-person-btn" data-index="${index}">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="action-btn delete-btn delete-person-btn" data-index="${index}">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                `;
+                
+                personList.appendChild(personItem);
+            });
+            
+            // 添加删除人员事件
+            document.querySelectorAll('.delete-person-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const index = parseInt(this.getAttribute('data-index'));
+                    const personName = persons[index].name;
+                    
+                    if (confirm(`确定要删除人员 "${personName}" 吗？`)) {
+                        persons.splice(index, 1);
+                        saveData('persons', persons);
+                        updatePersonList();
+                        updateSigninPage();
+                        
+                        showMessage(`人员 "${personName}" 已删除`, 'success');
+                    }
+                });
+            });
+            
+            // 添加编辑人员事件
+            document.querySelectorAll('.edit-person-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const index = parseInt(this.getAttribute('data-index'));
+                    const person = persons[index];
+                    
+                    // 创建编辑表单
+                    const newName = prompt('请输入新的姓名：', person.name);
+                    if (!newName) return;
+                    
+                    const newPhone = prompt('请输入新的联系电话：', person.phone || '');
+                    const newPosition = prompt('请输入新的职位：', person.position || '');
+                    
+                    // 选择部门
+                    let deptOptions = departments.map((dept, i) => `${i+1}. ${dept}`).join('\n');
+                    const deptSelect = prompt(`请选择部门（输入数字）：\n\n${deptOptions}`, departments.indexOf(person.department) + 1);
+                    
+                    let newDept = person.department;
+                    if (deptSelect && !isNaN(deptSelect)) {
+                        const deptIndex = parseInt(deptSelect) - 1;
+                        if (deptIndex >= 0 && deptIndex < departments.length) {
+                            newDept = departments[deptIndex];
+                        }
+                    }
+                    
+                    // 更新人员信息
+                    const oldName = person.name;
+                    person.name = newName;
+                    person.department = newDept;
+                    person.phone = newPhone || '';
+                    person.position = newPosition || '';
+                    
+                    // 更新签到记录中的信息
+                    signinRecords.forEach(record => {
+                        if (record.personId === person.id) {
+                            record.name = newName;
+                            record.department = newDept;
+                            record.position = newPosition || '';
+                        }
+                    });
+                    
+                    // 保存数据
+                    saveData('persons', persons);
+                    saveData('signinRecords', signinRecords);
+                    
+                    // 更新显示
+                    updatePersonList();
+                    updateSigninPage();
+                    updateAdminPage();
+                    
+                    showMessage(`人员 "${oldName}" 的信息已更新`, 'success');
+                });
+            });
+        }
+        
+        // 更新签到页面
+        function updateSigninPage() {
+            // 更新姓名选择列表
+            updateNameSelect();
+        }
+        
+        // 更新姓名选择列表
+        function updateNameSelect() {
+            nameSelect.innerHTML = '<option value="">请选择您的姓名</option>';
+            
+            persons.forEach(person => {
+                // 检查是否已签到
+                const hasSigned = signinRecords.some(record => record.personId === person.id);
+                const option = document.createElement('option');
+                option.value = person.name;
+                option.textContent = hasSigned ? `${person.name} (已签到)` : person.name;
+                option.disabled = hasSigned;
+                nameSelect.appendChild(option);
+            });
+        }
+        
+        // 更新管理员页面
+        function updateAdminPage() {
+            // 更新统计数字
+            const total = persons.length;
+            const signed = signinRecords.length;
+            const unsigned = total - signed;
+            const rate = total > 0 ? Math.round((signed / total) * 100) : 0;
+            
+            totalCount.textContent = total;
+            signedCount.textContent = signed;
+            unsignedCount.textContent = unsigned;
+            signRate.textContent = rate + '%';
+            
+            // 更新部门统计
+            updateDepartmentStats();
+            
+            // 更新签到表格（默认显示全部人员）
+            renderSigninTable('all');
+        }
+        
+        // 更新部门统计
+        function updateDepartmentStats() {
+            departmentStats.innerHTML = '';
+            
+            // 按部门统计
+            const deptStats = {};
+            
+            departments.forEach(dept => {
+                deptStats[dept] = {
+                    total: persons.filter(p => p.department === dept).length,
+                    signed: signinRecords.filter(r => r.department === dept).length
+                };
+            });
+            
+            // 显示统计
+            let hasData = false;
+            departments.forEach(dept => {
+                const stat = deptStats[dept];
+                if (stat.total === 0) return;
+                
+                hasData = true;
+                const deptItem = document.createElement('div');
+                deptItem.className = 'list-item';
+                
+                const signedPercent = stat.total > 0 ? Math.round((stat.signed / stat.total) * 100) : 0;
+                
+                deptItem.innerHTML = `
+                    <div class="list-item-content">
+                        <div class="list-item-name">${dept}</div>
+                        <div class="list-item-detail">
+                            已签到 ${stat.signed} / 总人数 ${stat.total} (${signedPercent}%)
+                        </div>
+                    </div>
+                    <div class="list-item-actions">
+                        <span style="color: #2ecc71; font-weight: 600;">${stat.signed}</span>
+                        <span style="color: #7f8c8d;">/</span>
+                        <span style="color: #3498db; font-weight: 600;">${stat.total}</span>
+                    </div>
+                `;
+                
+                departmentStats.appendChild(deptItem);
+            });
+            
+            if (!hasData) {
+                departmentStats.innerHTML = '<div class="empty-state"><i class="fas fa-building"></i><h3>暂无部门数据</h3><p>请在系统设置中添加部门和人员</p></div>';
+            }
+        }
+        
+        // 渲染签到表格
+        function renderSigninTable(filter) {
+            signinTableBody.innerHTML = '';
+            
+            let dataToShow = [];
+            
+            if (filter === 'all') {
+                // 显示全部人员，包括已签到和未签到
+                persons.forEach(person => {
+                    const signinRecord = signinRecords.find(record => record.personId === person.id);
+                    dataToShow.push({
+                        ...person,
+                        hasSigned: !!signinRecord,
+                        signinRecord: signinRecord
+                    });
+                });
+            } else if (filter === 'signed') {
+                // 只显示已签到人员
+                signinRecords.forEach(record => {
+                    const person = persons.find(p => p.id === record.personId);
+                    if (person) {
+                        dataToShow.push({
+                            ...person,
+                            hasSigned: true,
+                            signinRecord: record
+                        });
+                    }
+                });
+            } else if (filter === 'unsigned') {
+                // 只显示未签到人员
+                persons.forEach(person => {
+                    const hasSigned = signinRecords.some(record => record.personId === person.id);
+                    if (!hasSigned) {
+                        dataToShow.push({
+                            ...person,
+                            hasSigned: false,
+                            signinRecord: null
+                        });
+                    }
+                });
+            }
+            
+            if (dataToShow.length === 0) {
+                signinTableBody.innerHTML = `
+                    <tr>
+                        <td colspan="8" class="empty-state">
+                            <i class="fas fa-users"></i>
+                            <h3>暂无数据</h3>
+                            <p>请在系统设置中添加人员</p>
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+            
+            dataToShow.forEach((person, index) => {
+                const row = document.createElement('tr');
+                
+                row.innerHTML = `
+                    <td>${index + 1}</td>
+                    <td>${person.name}</td>
+                    <td>${person.department}</td>
+                    <td>${person.position || '-'}</td>
+                    <td>
+                        ${person.hasSigned ? 
+                            `<span class="status-badge status-signed">已签到</span>` : 
+                            `<span class="status-badge status-unsigned">未签到</span>`
+                        }
+                    </td>
+                    <td>${person.hasSigned ? person.signinRecord.signinTime : '-'}</td>
+                    <td class="signature-cell">${person.hasSigned ? person.signinRecord.signature : '-'}</td>
+                    <td>
+                        ${person.hasSigned ? 
+                            `<button class="action-btn delete-btn delete-signin-btn" data-id="${person.signinRecord.id}">
+                                <i class="fas fa-trash"></i>
+                            </button>` : 
+                            `<button class="action-btn edit-btn add-signin-btn" data-person-id="${person.id}">
+                                <i class="fas fa-plus"></i>
+                            </button>`
+                        }
+                    </td>
+                `;
+                
+                signinTableBody.appendChild(row);
+            });
+            
+            // 添加删除签到事件
+            document.querySelectorAll('.delete-signin-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const recordId = parseInt(this.getAttribute('data-id'));
+                    
+                    if (confirm('确定要删除这条签到记录吗？')) {
+                        signinRecords = signinRecords.filter(record => record.id !== recordId);
+                        saveData('signinRecords', signinRecords);
+                        updateAdminPage();
+                        updateSigninPage();
+                        
+                        showMessage('签到记录已删除', 'success');
+                    }
+                });
+            });
+            
+            // 添加手动签到事件
+            document.querySelectorAll('.add-signin-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const personId = parseInt(this.getAttribute('data-person-id'));
+                    const person = persons.find(p => p.id === personId);
+                    
+                    if (!person) return;
+                    
+                    const signature = prompt(`请为 ${person.name} 输入签名：`, person.name);
+                    if (!signature) return;
+                    
+                    // 创建签到记录
+                    const newRecord = {
+                        id: Date.now(),
+                        personId: person.id,
+                        name: person.name,
+                        department: person.department,
+                        position: person.position || '',
+                        signature: signature,
+                        phone: person.phone || '',
+                        notes: '手动签到',
+                        signinTime: new Date().toLocaleString('zh-CN'),
+                        timestamp: new Date().toISOString()
+                    };
+                    
+                    signinRecords.push(newRecord);
+                    saveData('signinRecords', signinRecords);
+                    
+                    updateAdminPage();
+                    updateSigninPage();
+                    
+                    showMessage(`${person.name} 手动签到成功`, 'success');
+                });
+            });
+        }
+        
+        // 显示成功页面
+        function showSuccessPage(record) {
+            // 设置成功页面数据
+            successTime.textContent = record.signinTime;
+            successName.textContent = record.name;
+            successDept.textContent = record.department;
+            successPosition.textContent = record.position || '未填写';
+            successPhone.textContent = record.phone || '未填写';
+            successSignature.textContent = record.signature;
+            
+            // 隐藏表单，显示成功页面
+            signinFormCard.style.display = 'none';
+            successPage.style.display = 'block';
+            
+            // 滚动到顶部
+            window.scrollTo(0, 0);
+        }
+        
+        // 导出为Excel
+        function exportToExcel() {
+            if (persons.length === 0) {
+                showMessage('没有人员数据可导出', 'error');
+                return;
+            }
+            
+            // 准备数据
+            const exportData = persons.map(person => {
+                const signinRecord = signinRecords.find(record => record.personId === person.id);
+                return {
+                    '序号': persons.indexOf(person) + 1,
+                    '姓名': person.name,
+                    '部门': person.department,
+                    '职位': person.position || '',
+                    '联系电话': person.phone || '',
+                    '签到状态': signinRecord ? '已签到' : '未签到',
+                    '签到时间': signinRecord ? signinRecord.signinTime : '',
+                    '签名': signinRecord ? signinRecord.signature : '',
+                    '备注': signinRecord ? signinRecord.notes || '' : ''
+                };
+            });
+            
+            // 创建工作簿
+            const wb = XLSX.utils.book_new();
+            const ws = XLSX.utils.json_to_sheet(exportData);
+            
+            // 设置列宽
+            const colWidths = [
+                { wch: 8 },  // 序号
+                { wch: 10 }, // 姓名
+                { wch: 15 }, // 部门
+                { wch: 15 }, // 职位
+                { wch: 15 }, // 联系电话
+                { wch: 10 }, // 签到状态
+                { wch: 20 }, // 签到时间
+                { wch: 20 }, // 签名
+                { wch: 20 }  // 备注
+            ];
+            ws['!cols'] = colWidths;
+            
+            // 添加工作表到工作簿
+            XLSX.utils.book_append_sheet(wb, ws, '签到记录');
+            
+            // 生成文件名
+            const fileName = `${meetingData.title}_签到记录_${new Date().toISOString().slice(0, 10)}.xlsx`;
+            
+            // 导出文件
+            XLSX.writeFile(wb, fileName);
+            
+            showMessage('Excel文件导出成功', 'success');
+        }
+        
+        // 导出为PDF
+        function exportToPDF() {
+            if (persons.length === 0) {
+                showMessage('没有人员数据可导出', 'error');
+                return;
+            }
+            
+            try {
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF('p', 'mm', 'a4');
+                
+                // 添加标题
+                doc.setFontSize(18);
+                doc.text(meetingData.title, 105, 20, { align: 'center' });
+                
+                // 添加会议信息
+                doc.setFontSize(11);
+                doc.text(`会议时间：${meetingData.date}`, 20, 35);
+                doc.text(`会议地点：${meetingData.location}`, 20, 42);
+                doc.text(`主办单位：${meetingData.organizer}`, 20, 49);
+                
+                // 添加统计信息
+                const total = persons.length;
+                const signed = signinRecords.length;
+                const unsigned = total - signed;
+                const signRate = total > 0 ? ((signed / total) * 100).toFixed(1) : 0;
+                
+                doc.text(`总人数：${total}`, 140, 35);
+                doc.text(`已签到：${signed}`, 140, 42);
+                doc.text(`未签到：${unsigned}`, 140, 49);
+                doc.text(`签到率：${signRate}%`, 140, 56);
+                
+                // 添加表格
+                const headers = [['序号', '姓名', '部门', '职位', '签到状态', '签到时间', '签名']];
+                const data = persons.map((person, index) => {
+                    const signinRecord = signinRecords.find(record => record.personId === person.id);
+                    return [
+                        index + 1,
+                        person.name,
+                        person.department,
+                        person.position || '',
+                        signinRecord ? '已签到' : '未签到',
+                        signinRecord ? signinRecord.signinTime : '',
+                        signinRecord ? signinRecord.signature : ''
+                    ];
+                });
+                
+                doc.autoTable({
+                    head: headers,
+                    body: data,
+                    startY: 65,
+                    theme: 'grid',
+                    headStyles: { fillColor: [52, 152, 219] },
+                    columnStyles: {
+                        0: { cellWidth: 15 },
+                        1: { cellWidth: 20 },
+                        2: { cellWidth: 25 },
+                        3: { cellWidth: 25 },
+                        4: { cellWidth: 20 },
+                        5: { cellWidth: 30 },
+                        6: { cellWidth: 30 }
+                    }
+                });
+                
+                // 保存PDF
+                const fileName = `${meetingData.title}_签到记录_${new Date().toISOString().slice(0, 10)}.pdf`;
+                doc.save(fileName);
+                
+                showMessage('PDF文件导出成功', 'success');
+            } catch (error) {
+                console.error('PDF导出错误:', error);
+                showMessage('PDF导出失败，请检查浏览器兼容性', 'error');
+            }
+        }
+        
+        // 导出数据备份
+        function exportDataBackup() {
+            const backupData = {
+                meetingData: meetingData,
+                departments: departments,
+                persons: persons,
+                signinRecords: signinRecords,
+                exportTime: new Date().toISOString(),
+                version: '1.0'
+            };
+            
+            const dataStr = JSON.stringify(backupData, null, 2);
+            const dataBlob = new Blob([dataStr], { type: 'application/json' });
+            
+            const url = URL.createObjectURL(dataBlob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `微信签到系统数据备份_${new Date().toISOString().slice(0, 10)}.json`;
+            link.click();
+            
+            URL.revokeObjectURL(url);
+            
+            showMessage('数据备份导出成功', 'success');
+        }
+        
+        // 导入数据备份
+        function importDataBackup() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.json,application/json';
+            
+            input.onchange = function(e) {
+                const file = e.target.files[0];
+                if (!file) return;
+                
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    try {
+                        const backupData = JSON.parse(event.target.result);
+                        
+                        if (confirm('导入数据将覆盖当前所有数据，是否继续？')) {
+                            // 导入数据
+                            meetingData = backupData.meetingData || meetingData;
+                            departments = backupData.departments || departments;
+                            persons = backupData.persons || persons;
+                            signinRecords = backupData.signinRecords || signinRecords;
+                            
+                            // 保存到本地存储
+                            saveData('meetingData', meetingData);
+                            saveData('departments', departments);
+                            saveData('persons', persons);
+                            saveData('signinRecords', signinRecords);
+                            
+                            // 更新界面
+                            loadMeetingData();
+                            loadDepartments();
+                            loadPersons();
+                            updateSigninPage();
+                            updateAdminPage();
+                            generateMeetingQRCode();
+                            generateTestQRCode();
+                            
+                            showMessage('数据导入成功', 'success');
+                        }
+                    } catch (error) {
+                        showMessage('导入失败：文件格式不正确', 'error');
+                        console.error('导入错误:', error);
+                    }
+                };
+                
+                reader.readAsText(file);
+            };
+            
+            input.click();
+        }
+        
+        // 保存数据到本地存储
+        function saveData(key, data) {
+            localStorage.setItem(key, JSON.stringify(data));
+        }
+        
+        // 显示消息
+        function showMessage(text, type) {
+            messageDiv.textContent = text;
+            messageDiv.className = 'message ' + type;
+            messageDiv.style.display = 'block';
+            
+            // 3秒后隐藏消息
+            setTimeout(() => {
+                messageDiv.style.display = 'none';
+            }, 3000);
+        }
+        
+        // 显示加载
+        function showLoading() {
+            loadingDiv.style.display = 'block';
+        }
+        
+        // 隐藏加载
+        function hideLoading() {
+            loadingDiv.style.display = 'none';
+        }
+    </script>
+</body>
+
+</html>
